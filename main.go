@@ -66,7 +66,7 @@ main package (go1.21+), so you can build your service as usual, for example:
 	go build ./cmd/my-service
 
 Unless the -fail flag is set, ` + name + ` will always return with a zero exit
-code in order to let your build succeed, even if a pgo download error occured.
+code in order to let your build succeed, even if a PGO download error occured.
 
 OPTIONS`
 		fmt.Fprintln(flag.CommandLine.Output(), usage)
@@ -78,7 +78,7 @@ OPTIONS`
 		failF     = flag.Bool("fail", false, "return with a non-zero exit code on failure")
 		jsonF     = flag.Bool("json", false, "print logs in json format")
 		profilesF = flag.Int("profiles", 5, "the number of profiles to fetch per query")
-		timeoutF  = flag.Duration("timeout", 60*time.Second, "timeout for fetching pgo profile")
+		timeoutF  = flag.Duration("timeout", 60*time.Second, "timeout for fetching PGO profile")
 		verboseF  = flag.Bool("v", false, "verbose output")
 		windowF   = flag.Duration("window", 3*24*time.Hour, "how far back to search for profiles")
 	)
@@ -119,7 +119,7 @@ OPTIONS`
 		err = loggedError{err}
 		if !*failF {
 			err = handledError{err}
-			log.Warn(name + " failed, but -fail is not set, returning exit code 0 to continue without pgo")
+			log.Warn(name + " failed, but -fail is not set, returning exit code 0 to continue without PGO")
 		}
 	}()
 
@@ -145,7 +145,7 @@ OPTIONS`
 		return err
 	}
 	log.Info(
-		"wrote pgo file",
+		"wrote PGO file",
 		"path", dst,
 		"samples", mergedProfile.Samples(),
 		"bytes", n,
