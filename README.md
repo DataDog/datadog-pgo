@@ -4,8 +4,9 @@ datadog-pgo is a tool for integrating continuous [profile-guided optimization](h
 
 ## Getting Started
 
-1. Set DD_API_KEY and DD_APP_KEY environment variables in your shell or CI environment.
-2. Use `datadog-pgo` to fetch and store a `default.pgo` file in the main package of your application as shown below:
+1. Create a dedicated API key and unscoped Application key for PGO as described in the [documentation](https://docs.datadoghq.com/account_management/api-app-keys/).
+2. Set the `DD_API_KEY` and `DD_APP_KEY` via the environment secret mechanism of your CI provider.
+3. Add a step to your CI pipeline to download a `default.pgo` into the main package of your application. This step must run before your build step.
 
 ```
 go run github.com/DataDog/datadog-pgo@latest 'service:foo env:prod' ./cmd/foo/default.pgo
@@ -13,6 +14,7 @@ go run github.com/DataDog/datadog-pgo@latest 'service:foo env:prod' ./cmd/foo/de
 
 **Public Beta:** Please always use the latest version of datadog-pgo in CI. Old versions may become deprecated and stop working on short notice.
 
+## CLI
 
 <!-- scripts/update_readme.go -->
 ```
