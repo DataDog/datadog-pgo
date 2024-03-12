@@ -40,7 +40,7 @@ main package (go1.21+), so you can build your service as usual, for example:
 	go build ./cmd/my-service
 
 Unless the -fail flag is set, datadog-pgo will always return with a zero exit
-code in order to let your build succeed, even if no pgo downloading failed.
+code in order to let your build succeed, even if datadog-pgo encountered an error.
 
 OPTIONS
   -fail
