@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -107,6 +108,7 @@ OPTIONS`
 	if *jsonF {
 		log = slog.New(slog.NewJSONHandler(os.Stdout, logOpt))
 	}
+	log.Info(name, "version", version, "go-version", runtime.Version())
 
 	// Log errors and turn them into warnings unless -fail is set
 	defer func() {
