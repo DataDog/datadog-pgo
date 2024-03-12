@@ -40,7 +40,7 @@ main package (go1.21+), so you can build your service as usual, for example:
 	go build ./cmd/my-service
 
 Unless the -fail flag is set, datadog-pgo will always return with a zero exit
-code in order to let your build succeed, even if a pgo download error occured.
+code in order to let your build succeed, even if a PGO download error occured.
 
 OPTIONS
   -fail
@@ -50,7 +50,7 @@ OPTIONS
   -profiles int
     	the number of profiles to fetch per query (default 5)
   -timeout duration
-    	timeout for fetching pgo profile (default 1m0s)
+    	timeout for fetching PGO profile (default 1m0s)
   -v	verbose output
   -window duration
     	how far back to search for profiles (default 72h0m0s)
