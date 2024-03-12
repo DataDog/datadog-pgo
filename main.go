@@ -63,6 +63,8 @@ The go toolchain will automatically pick up any default.pgo file found in the
 main package (go1.21+), so you can build your service as usual, for example:
 
 	go build ./cmd/my-service
+
+OPTIONS:
 `
 		fmt.Fprintln(flag.CommandLine.Output(), usage)
 		flag.PrintDefaults()
