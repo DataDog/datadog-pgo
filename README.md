@@ -56,3 +56,23 @@ OPTIONS
     	how far back to search for profiles (default 72h0m0s)
 ```
 <!-- scripts/update_readme.go -->
+
+## FAQ
+
+### How are profiles selected?
+
+By default datadog-pgo selects the top 5 profiles by CPU utilization within the last 72 hours. You can change this behavior using the `-profiles` and `-window` flags.
+
+This oppinionated approach is based on our internal research where it has yielded better results than taking a sample of average profiles.
+
+### How do I know if PGO is working?
+
+dd-trace-go tags the profiles of pgo-enabled applications with the `pgo:true`. You can search for this tag in the Profile List, or look for it on individual profiles.
+
+### What happens if there is a problem with fetching the profiles?
+
+datadog-pgo will always return with a zero exit code in order to let your build succeed, even if pgo downloading failed. If you want to fail the build on error, use the `-fail` flag.
+
+### How can I measure the impact of PGO on my application?
+
+The impact of PGO can be tricky to measure. When in doubt, try to measure CPU time per request by building a dashboard widget that divides the CPU usage of your application by the number of requests it serves. We hope to provide a better solution for this in the future.
