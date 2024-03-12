@@ -69,6 +69,12 @@ This oppinionated approach is based on our internal research where it has yielde
 
 The official [pgo documentation](https://go.dev/doc/pgo) recommends using profiles from your production environment. Profiles from other environments may not be representative of the production workload and will likely yield suboptimal results.
 
+If your application has a very diverse workload across different clusters or data centers, you can use multiple queries to fetch profiles from each of them. E.g.
+
+```
+datadog-pgo 'service:foo env:prod cluster:us-west-1' 'service:foo env:prod cluster:us-east-1' ./cmd/foo/default.pgo
+```
+
 ### How do I know if PGO is working?
 
 dd-trace-go tags the profiles of pgo-enabled applications with the `pgo:true`. You can search for this tag in the Profile List, or look for it on individual profiles.
