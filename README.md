@@ -6,7 +6,7 @@ datadog-pgo is a tool for integrating continuous [profile-guided optimization](h
 
 1. Create a dedicated API key and unscoped Application key for PGO as described in the [documentation](https://docs.datadoghq.com/account_management/api-app-keys/).
 2. Set the `DD_API_KEY` and `DD_APP_KEY` via the environment secret mechanism of your CI provider.
-3. Add a step to your CI pipeline to download a `default.pgo` into the main package of your application. This step must run before your build step.
+3. Run `datadog-pgo` before your build step. E.g. for a service `foo` that has its main package in `./cmd/foo`:
 
 ```
 go run github.com/DataDog/datadog-pgo@latest 'service:foo env:prod' ./cmd/foo/default.pgo
