@@ -6,7 +6,7 @@ datadog-pgo is a tool for integrating continuous [profile-guided optimization](h
 
 1. Create a dedicated API key and unscoped Application key for PGO as described in the [documentation](https://docs.datadoghq.com/account_management/api-app-keys/).
 2. Set the `DD_API_KEY` and `DD_APP_KEY` via the environment secret mechanism of your CI provider.
-3. Run `datadog-pgo` before your build step. E.g. for a service `foo` that has its main package in `./cmd/foo`:
+3. Run `datadog-pgo` before your build step. E.g. for a service `foo` that runs in `prod` and has its main package in `./cmd/foo`, you should add this step:
 
 ```
 go run github.com/DataDog/datadog-pgo@latest 'service:foo env:prod' ./cmd/foo/default.pgo
@@ -65,14 +65,18 @@ By default datadog-pgo selects the top 5 profiles by CPU utilization within the 
 
 This oppinionated approach is based on our internal research where it has yielded better results than taking a sample of average profiles.
 
+### Can I use profiles from a different environment?
+
+The official [pgo documentation](https://go.dev/doc/pgo) recommends using profiles from your production environment. Profiles from other environments may not be representative of the production workload and will likely yield suboptimal results.
+
 ### How do I know if PGO is working?
 
 dd-trace-go tags the profiles of pgo-enabled applications with the `pgo:true`. You can search for this tag in the Profile List, or look for it on individual profiles.
 
-### What happens if there is a problem with fetching the profiles?
-
-datadog-pgo will always return with a zero exit code in order to let your build succeed, even if pgo downloading failed. If you want to fail the build on error, use the `-fail` flag.
-
 ### How can I measure the impact of PGO on my application?
 
 The impact of PGO can be tricky to measure. When in doubt, try to measure CPU time per request by building a dashboard widget that divides the CPU usage of your application by the number of requests it serves. We hope to provide a better solution for this in the future.
+
+### What happens if there is a problem with fetching the profiles?
+
+datadog-pgo will always return with a zero exit code in order to let your build succeed, even if pgo downloading failed. If you want to fail the build on error, use the `-fail` flag.
