@@ -65,7 +65,7 @@ func readmeMarkdown() (string, error) {
 
 func helpText() (string, error) {
 	buf := &bytes.Buffer{}
-	c := exec.Command("./datadog-pgo", "-h")
+	c := exec.Command("go", "run", ".", "-h")
 	c.Stdout = buf
 	c.Stderr = buf
 	if err := c.Run(); err != nil {
