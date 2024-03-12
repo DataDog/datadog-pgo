@@ -8,7 +8,7 @@ datadog-pgo is a tool for integrating continuous [profile-guided optimization](h
 2. Use `datadog-pgo` to fetch and store a `default.pgo` file in the main package of your application as shown below:
 
 ```
-go run github.com/DataDog/datadog-pgo@latest 'service:foo env:prod' ./cmd/foo/default.pgo`
+go run github.com/DataDog/datadog-pgo@latest 'service:foo env:prod' ./cmd/foo/default.pgo
 ```
 
 **Public Beta:** Please always use the latest version of datadog-pgo in CI. Old versions may become deprecated and stop working on short notice.
