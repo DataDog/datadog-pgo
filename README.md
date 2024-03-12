@@ -23,8 +23,7 @@ main package (go1.21+), so you can build your service as usual, for example:
 
 	go build ./cmd/my-service
 
-OPTIONS:
-
+OPTIONS
   -fail
     	return with a non-zero exit code on failure
   -json
