@@ -150,6 +150,7 @@ OPTIONS`
 		"samples", mergedProfile.Samples(),
 		"bytes", n,
 		"total-duration", timeSinceRoundMS(start),
+		"debug-query", mergedProfile.DebugQuery(),
 	)
 	return nil
 }
@@ -249,7 +250,7 @@ func SearchDownloadMerge(ctx context.Context, log *slog.Logger, numProfiles int,
 					if err != nil {
 						return err
 					}
-					return pgoProfile.Merge(prof)
+					return pgoProfile.Merge(p.ProfileID, prof)
 				})
 			}
 			return nil
@@ -265,21 +266,25 @@ func SearchDownloadMerge(ctx context.Context, log *slog.Logger, numProfiles int,
 
 // MergedProfile is the result of merging multiple profiles.
 type MergedProfile struct {
-	mu      sync.Mutex
-	profile *profile.Profile
+	mu         sync.Mutex
+	profile    *profile.Profile
+	profileIDs []string
 }
 
 // Merge merges prof into the current profile. Callers must not use prof after
 // calling Merge.
-func (p *MergedProfile) Merge(prof *profile.Profile) (err error) {
+func (p *MergedProfile) Merge(id string, prof *profile.Profile) (err error) {
 	// Drop labels to reduce profile size
 	for _, s := range prof.Sample {
 		s.Label = nil
 	}
 
-	// Acquire lock to access p.profile.
+	// Acquire lock to access p fields
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	// Append profile ID
+	p.profileIDs = append(p.profileIDs, id)
 
 	// First profile? No need to merge.
 	if p.profile == nil {
@@ -311,6 +316,12 @@ func (p *MergedProfile) Write(dst string) (int64, error) {
 // Samples returns the number of samples in the merged profile.
 func (p *MergedProfile) Samples() int {
 	return len(p.profile.Sample)
+}
+
+// DebugQuery returns a query string that can be used to view the profiles that
+// went into the merged profile.
+func (p *MergedProfile) DebugQuery() string {
+	return "profile-id:(" + strings.Join(p.profileIDs, " OR ") + ")"
 }
 
 // ProfileDownload is the result of downloading a profile.

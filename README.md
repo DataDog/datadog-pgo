@@ -86,3 +86,11 @@ The impact of PGO can be tricky to measure. When in doubt, try to measure CPU ti
 ### What happens if there is a problem?
 
 datadog-pgo will always return with a zero exit code in order to let your build succeed, even if pgo downloading failed. If you want to fail the build on error, use the `-fail` flag.
+
+### How can I look at the profiles?
+
+1. Copy the the `debug-query` output from the last log line of datadog-pgo.
+2. Go to the profile explorer in the Datadog UI and paste the query.
+3. Increase the time range to 1 week to make sure you see all profiles.
+
+Please note that the profile retention is 7 days. If you're interested in the use case of retaining pgo profiles for longer, please let us know by opening an github issue on this repo.
