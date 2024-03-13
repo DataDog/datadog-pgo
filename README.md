@@ -94,3 +94,7 @@ datadog-pgo will always return with a zero exit code in order to let your build 
 3. Increase the time range to 1 week to make sure you see all profiles.
 
 Please note that the profile retention is 7 days. If you're interested in the use case of retaining pgo profiles for longer, please let us know by opening an github issue on this repo.
+
+### How can I provide feedback?
+
+Just open a GitHub issue on this repository. We're happy to hear from you!
