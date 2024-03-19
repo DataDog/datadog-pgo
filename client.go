@@ -41,6 +41,37 @@ type Client struct {
 	concurrency chan struct{}
 }
 
+// SearchAndDownloadProfiles searches for profiles using the given queries and
+// downloads them.
+func (c *Client) SearchAndDownloadProfiles(ctx context.Context, queries []SearchQuery) (profiles *ProfilesDownload, err error) {
+	defer wrapErr(&err, "search and download profiles")
+	defer c.limitConcurrency()()
+
+	var payload = struct {
+		Queries []SearchQuery `json:"queries"`
+	}{queries}
+	body, err := json.Marshal(&payload)
+	if err != nil {
+		return nil, err
+	}
+	req, err := c.request(ctx, "POST", "/api/unstable/profiles/gopgo", body)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	return &ProfilesDownload{data: data}, nil
+}
+
 // SearchProfiles searches for profiles using the given query. It returns a list
 // of profiles and an error if any.
 func (c *Client) SearchProfiles(ctx context.Context, query SearchQuery) (profiles []*SearchProfile, err error) {
@@ -160,6 +191,7 @@ func (c *Client) limitConcurrency() func() {
 type SearchQuery struct {
 	Filter SearchFilter `json:"filter"`
 	Sort   SearchSort   `json:"sort"`
+	Limit  int          `json:"limit"`
 }
 
 // SearchFilter holds the filter parameters for searching for profiles.

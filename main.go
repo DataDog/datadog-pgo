@@ -91,7 +91,7 @@ OPTIONS`
 	}
 
 	// Split args into queries and dst
-	queries := buildQueries(*windowF, flag.Args()[:flag.NArg()-1])
+	queries := buildQueries(*windowF, *profilesF, flag.Args()[:flag.NArg()-1])
 	dst := flag.Arg(flag.NArg() - 1)
 
 	// Setup logger
@@ -134,7 +134,7 @@ OPTIONS`
 	defer cancel()
 
 	// Search, download and merge profiles
-	mergedProfile, err := SearchDownloadMerge(ctx, log, *profilesF, client, queries)
+	mergedProfile, err := SearchDownloadMerge(ctx, log, client, queries)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ OPTIONS`
 }
 
 // buildQueries returns a list of SearchQuery for the given time window and queries.
-func buildQueries(window time.Duration, queries []string) (searchQueries []SearchQuery) {
+func buildQueries(window time.Duration, limit int, queries []string) (searchQueries []SearchQuery) {
 	searchQueries = make([]SearchQuery, 0, len(queries))
 	for _, q := range queries {
 		// PGO is only supported for Go right now, avoid fetching non-go
@@ -176,13 +176,27 @@ func buildQueries(window time.Duration, queries []string) (searchQueries []Searc
 				// TODO(fg) or use @metrics.core_cpu_time_total?
 				Field: "@metrics.core_cpu_cores",
 			},
+			Limit: limit,
 		})
 	}
 	return
 }
 
+// usePGOEndpoint is a flag to use the pgo endpoint instead of the search and
+// download endpoints. If this new endpoint proves to work well, we can remove
+// this flag and the old code.
+const usePGOEndpoint = true
+
 // SearchDownloadMerge queries the profiles, downloads them and merges them into a single profile.
-func SearchDownloadMerge(ctx context.Context, log *slog.Logger, numProfiles int, client *Client, queries []SearchQuery) (*MergedProfile, error) {
+func SearchDownloadMerge(ctx context.Context, log *slog.Logger, client *Client, queries []SearchQuery) (*MergedProfile, error) {
+	if usePGOEndpoint {
+		return searchDownloadMergePGOEndpoint(ctx, log, client, queries)
+	}
+	return SearchDownloadMerge(ctx, log, client, queries)
+}
+
+// searchDownloadMerge queries the profiles, downloads them and merges them into a single profile.
+func searchDownloadMerge(ctx context.Context, log *slog.Logger, client *Client, queries []SearchQuery) (*MergedProfile, error) {
 	newPool := func() *pool.ContextPool {
 		return pool.New().WithErrors().WithContext(ctx).WithCancelOnError().WithFirstError()
 	}
@@ -213,8 +227,8 @@ func SearchDownloadMerge(ctx context.Context, log *slog.Logger, numProfiles int,
 				"query", q.Filter.Query,
 			)
 
-			if len(profiles) > numProfiles {
-				profiles = profiles[:numProfiles]
+			if len(profiles) > q.Limit {
+				profiles = profiles[:q.Limit]
 			}
 
 			for _, p := range profiles {
@@ -262,6 +276,17 @@ func SearchDownloadMerge(ctx context.Context, log *slog.Logger, numProfiles int,
 		return nil, err
 	}
 	return pgoProfile, nil
+}
+
+// searchDownloadMergePGOEndpoint queries the profiles and downloads them using
+// the new pgo endpoint. Then it merges hte profiles into a single profile using
+// the pgo endpoint.
+func searchDownloadMergePGOEndpoint(ctx context.Context, log *slog.Logger, client *Client, queries []SearchQuery) (*MergedProfile, error) {
+	download, err := client.SearchAndDownloadProfiles(ctx, queries)
+	if err != nil {
+		return nil, nil
+	}
+	return download.MergedProfile(log)
 }
 
 // MergedProfile is the result of merging multiple profiles.
@@ -347,6 +372,80 @@ func (d ProfileDownload) ExtractCPUProfile() ([]byte, error) {
 	}
 
 	return nil, errors.New("no cpu.pprof found in download")
+}
+
+// ProfilesDownload is the result of downloading several profiles from the pgo
+// endpoint.
+type ProfilesDownload struct {
+	data []byte
+}
+
+// MergeProfile merges the profiles in the download into a single profile.
+func (d *ProfilesDownload) MergedProfile(log *slog.Logger) (*MergedProfile, error) {
+	zr, err := zip.NewReader(bytes.NewReader(d.data), int64(len(d.data)))
+	if err != nil {
+		return nil, err
+	}
+
+	var pgoProfile = &MergedProfile{}
+	for _, f := range zr.File {
+		rc, err := f.Open()
+		if err != nil {
+			return nil, err
+		}
+		prof, err := profile.Parse(rc)
+		if err != nil {
+			return nil, err
+		}
+		if err := pgoProfile.Merge(f.Name, prof); err != nil {
+			return nil, err
+		}
+
+		seconds := prof.TimeNanos / int64(time.Second)
+		nanoseconds := prof.TimeNanos % int64(time.Second)
+		t := time.Unix(seconds, nanoseconds)
+
+		cores, err := cpuCores(prof)
+		if err != nil {
+			log.Warn("failed to extract cpu cores", "error", err)
+		}
+
+		log.Info(
+			"extracted profile",
+			// "service", p.Service, TODO: can we get this?
+			"cpu-cores", float64(int(cores*10))/10,
+			"duration", time.Duration(prof.DurationNanos),
+			"age", time.Since(t).Round(time.Second),
+			"profile-id", f.Name,
+		)
+		if err := rc.Close(); err != nil {
+			return nil, err
+		}
+	}
+
+	return pgoProfile, nil
+}
+
+// cpuCores returns the number of CPU cores used in the profile.
+func cpuCores(prof *profile.Profile) (float64, error) {
+	cpuIdx := -1
+	for idx, st := range prof.SampleType {
+		if st.Type == "cpu" && st.Unit == "nanoseconds" {
+			cpuIdx = idx
+			break
+		}
+	}
+	if cpuIdx == -1 {
+		return 0, errors.New("no cpu sample type found")
+	}
+	var cpuNanos int64
+	for _, s := range prof.Sample {
+		if len(s.Value) <= int(cpuIdx) {
+			return 0, errors.New("invalid sample value")
+		}
+		cpuNanos += s.Value[cpuIdx]
+	}
+	return float64(cpuNanos) / float64(prof.DurationNanos), nil
 }
 
 // wrapErr wraps the error with name if it is not nil.
