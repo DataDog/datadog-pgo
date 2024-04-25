@@ -1,0 +1,8 @@
+Component,Origin,License,Copyright
+N/A,github.com/google/pprof,Apache-2.0,Google Inc.
+N/A,github.com/lmittmann/tint,MIT,Copyright (c) 2023 lmittmann
+N/A,github.com/mattn/go-isatty,MIT,Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
+N/A,github.com/sourcegraph/conc,MIT,Copyright (c) 2023 Sourcegraph
+N/A,go.uber.org/atomic,MIT,Copyright (c) 2016 Uber Technologies, Inc.
+N/A,go.uber.org/multierr,MIT,Copyright (c) 2017-2021 Uber Technologies, Inc.
+N/A,golang.org/x/sys,BSD-3-Clause,Copyright (c) 2009 The Go Authors. All rights reserved.
