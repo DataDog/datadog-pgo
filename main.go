@@ -139,6 +139,11 @@ OPTIONS`
 		return err
 	}
 
+	// Apply no inline hack
+	if err := mergedProfile.ApplyNoInlineHack(); err != nil {
+		return err
+	}
+
 	// Writing pgo file to dst
 	n, err := mergedProfile.Write(dst)
 	if err != nil {
@@ -320,6 +325,11 @@ func (p *MergedProfile) Merge(id string, prof *profile.Profile) (err error) {
 	// Merge profiles after the first one.
 	p.profile, err = profile.Merge([]*profile.Profile{p.profile, prof})
 	return
+}
+
+// ApplyNoInlineHack removes samples that lead to bad inlining decisions.
+func (p *MergedProfile) ApplyNoInlineHack() error {
+	return ApplyNoInlineHack(p.profile)
 }
 
 // Write writes the merged profile to dst and returns the number of bytes
