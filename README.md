@@ -2,11 +2,8 @@
 
 datadog-pgo is a tool for integrating continuous [profile-guided optimization](https://go.dev/doc/pgo) (PGO) into your Go build process. It fetches representative CPU profiles from Datadog and merges them into a `default.pgo` file that is used by the Go toolchain to optimize your application.
 
-## ⚠️ Public Beta
+You can learn more about this feature in our [official documentation](https://docs.datadoghq.com/profiler/guide/save-cpu-in-production-with-go-pgo/) as well as in [our announcement blog post](https://www.datadoghq.com/blog/datadog-pgo-go/).
 
-* This tool is currently in public beta. Please open a GitHub issue if you have any feedback or questions.
-* Always use the latest version of datadog-pgo in CI as shown below. Old versions may become deprecated and stop working on short notice.
-* We're considering to integrate this tool into [datadog-ci](https://github.com/DataDog/datadog-ci). Please let us know if you're interested in this.
 
 ## Getting Started
 
@@ -19,6 +16,9 @@ go run github.com/DataDog/datadog-pgo@latest 'service:foo env:prod' ./cmd/foo/de
 ```
 
 That's it. The go toolchain will automatically pick up any `default.pgo` file in the main package, so there is no need to modify your `go build` step.
+
+Note: You should always use the `datadog-pgo@latest` version as shown above. Old versions may become deprecated and stop working on short notice.
+
 
 ## CLI
 
