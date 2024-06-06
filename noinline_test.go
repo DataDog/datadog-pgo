@@ -14,6 +14,7 @@ func TestApplyNoInlineHack(t *testing.T) {
 	require.Equal(t, 17, leafSamples(prof, grpcProcessDataFunc))
 	require.NoError(t, ApplyNoInlineHack(prof))
 	require.Equal(t, 0, leafSamples(prof, grpcProcessDataFunc))
+	require.Equal(t, 17, leafSamples(prof, doNotInlinePrefix+grpcProcessDataFunc))
 }
 
 func loadTestProfile(t *testing.T, name string) *profile.Profile {

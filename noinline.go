@@ -6,30 +6,34 @@ import (
 	"github.com/google/pprof/profile"
 )
 
-const grpcProcessDataFunc = "google.golang.org/grpc/internal/transport.(*loopyWriter).processData"
+const (
+	grpcProcessDataFunc = "google.golang.org/grpc/internal/transport.(*loopyWriter).processData"
+	doNotInlinePrefix   = "DO NOT INLINE: "
+)
 
-// ApplyNoInlineHack removes problematic samples from the profile to avoid bad
+// ApplyNoInlineHack renames problematic functions in the profile to avoid bad
 // inlining decisions that can have a large memory impact.
 // See https://github.com/golang/go/issues/65532 for details.
 //
 // TODO: Delete this once it's fixed upstream.
 func ApplyNoInlineHack(prof *profile.Profile) error {
-	if err := removeLeafSamples(prof, []string{grpcProcessDataFunc}); err != nil {
+	if err := renameNoInlineFuncs(prof, []string{grpcProcessDataFunc}); err != nil {
 		return fmt.Errorf("noinline hack: %w", err)
 	}
 	return nil
 }
 
-func removeLeafSamples(prof *profile.Profile, funcs []string) error {
-	newSamples := make([]*profile.Sample, 0, len(prof.Sample))
+func renameNoInlineFuncs(prof *profile.Profile, noInlineFuncs []string) error {
 	for _, s := range prof.Sample {
 		leaf, ok := leafLine(s)
-		if ok && lineContainsAny(leaf, funcs) {
-			continue
+		if ok && lineContainsAny(leaf, noInlineFuncs) {
+			// There might be multiple samples that point to the same function.
+			// But once we rename the function for the function for the first
+			// time, it stops matching the noInlineFuncs list. So we don't end
+			// up adding the prefix multiple times.
+			leaf.Function.Name = doNotInlinePrefix + leaf.Function.Name
 		}
-		newSamples = append(newSamples, s)
 	}
-	prof.Sample = newSamples
 	return nil
 }
 
