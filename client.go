@@ -165,7 +165,7 @@ func (c *Client) post(ctx context.Context, path string, payload any) ([]byte, er
 	}
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		return nil, fmt.Errorf("POST %s: %s: please check that your DD_API_KEY, DD_APP_KEY and DD_SITE env vars are set correctly and that your account has profiles matching your query", path, res.Status)
+		return nil, fmt.Errorf("%s: please check that your DD_API_KEY, DD_APP_KEY and DD_SITE env vars are set correctly and that your account has profiles matching your query", res.Status)
 	}
 	return resBody, nil
 }
