@@ -12,7 +12,7 @@ You can learn more about this feature in our [official documentation](https://do
 3. Run `datadog-pgo` before your build step. E.g. for a service `foo` that runs in `prod` and has its main package in `./cmd/foo`, you should add this step:
 
 ```
-go run github.com/DataDog/datadog-pgo@latest 'service:foo env:prod' ./cmd/foo/default.pgo
+go run github.com/DataDog/datadog-pgo@latest "service:foo env:prod" ./cmd/foo/default.pgo
 ```
 
 That's it. The go toolchain will automatically pick up any `default.pgo` file in the main package, so there is no need to modify your `go build` step.
