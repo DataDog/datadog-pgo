@@ -8,6 +8,7 @@ import (
 
 const (
 	grpcProcessDataFunc = "google.golang.org/grpc/internal/transport.(*loopyWriter).processData"
+	runtimeGoparkFunc   = "runtime.gopark"
 	doNotInlinePrefix   = "DO NOT INLINE: "
 )
 
@@ -17,7 +18,7 @@ const (
 //
 // TODO: Delete this once it's fixed upstream.
 func ApplyNoInlineHack(prof *profile.Profile) error {
-	if err := renameNoInlineFuncs(prof, []string{grpcProcessDataFunc}); err != nil {
+	if err := renameNoInlineFuncs(prof, []string{grpcProcessDataFunc, runtimeGoparkFunc}); err != nil {
 		return fmt.Errorf("noinline hack: %w", err)
 	}
 	return nil
