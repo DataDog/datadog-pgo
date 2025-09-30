@@ -18,6 +18,7 @@ import (
 	"log/slog"
 
 	"github.com/google/pprof/profile"
+	"github.com/klauspost/compress/zstd"
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
 	"github.com/sourcegraph/conc/pool"
@@ -403,7 +404,13 @@ func (d *ProfilesDownload) MergedProfile(log *slog.Logger) (*MergedProfile, erro
 		if err != nil {
 			return nil, err
 		}
-		prof, err := profile.Parse(rc)
+		decoder, err := zstd.NewReader(rc)
+		if err != nil {
+			return nil, err
+		}
+		defer decoder.Close()
+
+		prof, err := profile.Parse(decoder)
 		if err != nil {
 			return nil, err
 		}

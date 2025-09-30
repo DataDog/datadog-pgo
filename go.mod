@@ -1,6 +1,6 @@
 module github.com/DataDog/datadog-pgo
 
-go 1.21
+go 1.22
 
 require (
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7
@@ -12,6 +12,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
