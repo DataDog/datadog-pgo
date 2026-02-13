@@ -1,6 +1,6 @@
 module github.com/DataDog/datadog-pgo
 
-go 1.21
+go 1.25.7
 
 require (
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7
