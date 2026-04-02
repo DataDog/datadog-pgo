@@ -4,10 +4,10 @@ go 1.21
 
 require (
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7
-	github.com/lmittmann/tint v1.0.4
+	github.com/lmittmann/tint v1.0.7
 	github.com/mattn/go-isatty v0.0.20
 	github.com/sourcegraph/conc v0.3.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.4
 )
 
 require (
