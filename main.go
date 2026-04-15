@@ -66,7 +66,7 @@ main package (go1.21+), so you can build your service as usual, for example:
 	go build ./cmd/my-service
 
 Unless the -fail flag is set, ` + name + ` will always return with a zero exit
-code in order to let your build succeed, even if a PGO download error occured.
+code in order to let your build succeed, even if a PGO download error occurred.
 
 OPTIONS`
 		fmt.Fprintln(flag.CommandLine.Output(), usage)
