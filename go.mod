@@ -2,6 +2,8 @@ module github.com/DataDog/datadog-pgo
 
 go 1.21
 
+toolchain go1.26.2
+
 require (
 	github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7
 	github.com/lmittmann/tint v1.0.4
