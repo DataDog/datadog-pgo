@@ -1,4 +1,4 @@
-package main
+package pgo
 
 import (
 	"bytes"
@@ -135,7 +135,7 @@ func (c *Client) request(ctx context.Context, method, path string, body []byte) 
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", name+"/"+version)
+	req.Header.Set("User-Agent", Name+"/"+Version)
 	req.Header.Set("DD-APPLICATION-KEY", c.appKey)
 	req.Header.Set("DD-API-KEY", c.apiKey)
 	return req, nil
