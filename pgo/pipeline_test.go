@@ -3,9 +3,12 @@ package pgo
 import (
 	"archive/zip"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"io"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,14 +21,9 @@ import (
 // noinline.go so this test stays in sync with what the hack actually targets.
 var noInlineTargets = []string{grpcProcessDataFunc, runtimeGoparkFunc}
 
-// TestMergedProfilePipeline exercises the same code path the datadog-pgo CLI
-// drives against the gopgo endpoint: it packages the bundled testdata profile
-// as the ZIP the endpoint returns, then runs
-// ProfilesDownload.MergedProfile -> ApplyNoInlineHack -> Write, and asserts the
-// result is a valid, deterministic .pgo file with the no-inline workaround
-// applied.
-//
-// It needs no network access and no Datadog credentials.
+// TestMergedProfilePipeline exercises Fetch, the same path the datadog-pgo
+// CLI uses. An in-memory server returns the ZIP produced by the gopgo endpoint,
+// so the test needs neither network access nor Datadog credentials.
 func TestMergedProfilePipeline(t *testing.T) {
 	profBytes, err := os.ReadFile(filepath.Join("testdata", "grpc-anon.pprof"))
 	if err != nil {
@@ -53,26 +51,47 @@ func TestMergedProfilePipeline(t *testing.T) {
 		return buf.Bytes()
 	}
 
-	// runPipeline mirrors the CLI's Fetch end-to-end for the merge/write stage.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/api/unstable/profiles/gopgo" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/zip")
+		if _, err := w.Write(gopgoEndpointZIP()); err != nil {
+			t.Errorf("write mock response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	client := &Client{
+		apiKey:      "test-api-key",
+		appKey:      "test-app-key",
+		concurrency: make(chan struct{}, maxConcurrency),
+		baseURL:     server.URL,
+		httpClient:  server.Client(),
+	}
+
+	// runPipeline invokes the public Fetch pipeline through the mock backend.
 	runPipeline := func(dst string) (n int64, samples int, sha string) {
 		log := slog.New(slog.NewTextHandler(io.Discard, nil))
-		dl := &ProfilesDownload{data: gopgoEndpointZIP()}
-		mp, err := dl.MergedProfile(log)
+		err := Fetch(context.Background(), []string{"service:test"}, dst, Options{
+			Client:           client,
+			Logger:           log,
+			ProfilesPerQuery: 2,
+		})
 		if err != nil {
-			t.Fatalf("MergedProfile: %v", err)
+			t.Fatalf("Fetch: %v", err)
 		}
-		if err := mp.ApplyNoInlineHack(); err != nil {
-			t.Fatalf("ApplyNoInlineHack: %v", err)
-		}
-		n, err = mp.Write(dst)
-		if err != nil {
-			t.Fatalf("Write: %v", err)
-		}
-		samples = mp.Samples()
 		data, err := os.ReadFile(dst)
 		if err != nil {
 			t.Fatalf("read %s: %v", dst, err)
 		}
+		parsed, err := profile.ParseData(data)
+		if err != nil {
+			t.Fatalf("parse %s: %v", dst, err)
+		}
+		n = int64(len(data))
+		samples = len(parsed.Sample)
 		sum := sha256.Sum256(data)
 		sha = string(sum[:])
 		return n, samples, sha
