@@ -58,10 +58,10 @@ type Options struct {
 	// to DefaultWindow.
 	Window time.Duration
 
-	// SoftFail makes Fetch log errors via Logger and return nil instead
-	// of returning them. Use this in build pipelines that should keep
-	// going when PGO data is unavailable.
-	SoftFail bool
+	// Client overrides the Datadog client built from the credentials above.
+	// It is useful for callers that need custom HTTP transport behavior, such
+	// as tests using an httptest.Server.
+	Client *Client
 }
 
 // Fetch is the high-level entry point. It builds search queries from the given
@@ -72,6 +72,7 @@ type Options struct {
 // Fetch is equivalent to the datadog-pgo CLI's default behavior. For finer
 // control, use BuildQueries + SearchDownloadMerge + MergedProfile directly.
 func Fetch(ctx context.Context, queries []string, dst string, opts Options) (err error) {
+	start := time.Now()
 	log := opts.Logger
 	if log == nil {
 		log = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -83,23 +84,18 @@ func Fetch(ctx context.Context, queries []string, dst string, opts Options) (err
 		opts.Window = DefaultWindow
 	}
 
-	defer func() {
-		if err == nil || !opts.SoftFail {
-			return
-		}
-		log.Warn(Name+" failed, continuing without PGO", "err", err)
-		err = nil
-	}()
-
 	if opts.Timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, opts.Timeout)
 		defer cancel()
 	}
 
-	client, err := newClientFromOptions(opts)
-	if err != nil {
-		return err
+	client := opts.Client
+	if client == nil {
+		client, err = newClientFromOptions(opts)
+		if err != nil {
+			return err
+		}
 	}
 
 	searchQueries := BuildQueries(opts.Window, opts.ProfilesPerQuery, queries)
@@ -119,6 +115,7 @@ func Fetch(ctx context.Context, queries []string, dst string, opts Options) (err
 		"path", dst,
 		"samples", merged.Samples(),
 		"bytes", n,
+		"total-duration", timeSinceRoundMS(start),
 		"debug-query", merged.DebugQuery(),
 	)
 	return nil

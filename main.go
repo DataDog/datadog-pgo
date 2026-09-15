@@ -32,8 +32,6 @@ func main() {
 
 // run runs the pgo tool and returns an error if any.
 func run() (err error) {
-	start := time.Now()
-
 	// Define usage
 	flag.Usage = func() {
 		usage := `usage: ` + pgo.Name + ` [OPTIONS]... QUERY... DEST
@@ -82,8 +80,8 @@ OPTIONS`
 		return errors.New("at least 2 arguments are required")
 	}
 
-	// Split args into queries and dst
-	queries := pgo.BuildQueries(*fromF, *profilesF, flag.Args()[:flag.NArg()-1])
+	// Split args into queries and destination.
+	queries := flag.Args()[:flag.NArg()-1]
 	dst := flag.Arg(flag.NArg() - 1)
 
 	// Setup logger
@@ -115,46 +113,12 @@ OPTIONS`
 		}
 	}()
 
-	// Setup API client
-	client, err := pgo.ClientFromEnv()
-	if err != nil {
-		return fmt.Errorf("clientFromEnv: %w", err)
-	}
-
-	// Create context
-	ctx, cancel := context.WithTimeout(context.Background(), *timeoutF)
-	defer cancel()
-
-	// Search, download and merge profiles
-	mergedProfile, err := pgo.SearchDownloadMerge(ctx, log, client, queries)
-	if err != nil {
-		return err
-	}
-
-	// Apply no inline hack
-	if err := mergedProfile.ApplyNoInlineHack(); err != nil {
-		return err
-	}
-
-	// Writing pgo file to dst
-	n, err := mergedProfile.Write(dst)
-	if err != nil {
-		return err
-	}
-	log.Info(
-		"wrote PGO file",
-		"path", dst,
-		"samples", mergedProfile.Samples(),
-		"bytes", n,
-		"total-duration", timeSinceRoundMS(start),
-		"debug-query", mergedProfile.DebugQuery(),
-	)
-	return nil
-}
-
-// timeSinceRoundMS returns the time since t rounded to the nearest millisecond.
-func timeSinceRoundMS(t time.Time) time.Duration {
-	return time.Since(t) / time.Millisecond * time.Millisecond
+	return pgo.Fetch(context.Background(), queries, dst, pgo.Options{
+		Logger:           log,
+		Timeout:          *timeoutF,
+		ProfilesPerQuery: *profilesF,
+		Window:           *fromF,
+	})
 }
 
 // loggedError is an error that has been logged.
