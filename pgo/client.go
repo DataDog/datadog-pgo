@@ -1,4 +1,4 @@
-package main
+package pgo
 
 import (
 	"bytes"
@@ -39,6 +39,12 @@ type Client struct {
 	apiKey      string
 	appKey      string
 	concurrency chan struct{}
+
+	// baseURL and httpClient allow tests and specialized callers in this
+	// package to direct requests to a local server. Production clients leave
+	// these unset and use the Datadog site and http.DefaultClient.
+	baseURL    string
+	httpClient *http.Client
 }
 
 // SearchAndDownloadProfiles searches for profiles using the given queries and
@@ -112,7 +118,7 @@ func (c *Client) DownloadProfile(ctx context.Context, p *SearchProfile) (d Profi
 	if err != nil {
 		return ProfileDownload{}, err
 	}
-	res, err := http.DefaultClient.Do(req)
+	res, err := c.do(req)
 	if err != nil {
 		return ProfileDownload{}, err
 	}
@@ -128,14 +134,17 @@ func (c *Client) DownloadProfile(ctx context.Context, p *SearchProfile) (d Profi
 // request creates a new HTTP request with the given method and path and sets
 // the required headers.
 func (c *Client) request(ctx context.Context, method, path string, body []byte) (*http.Request, error) {
-	url := fmt.Sprintf("https://app.%s%s", c.site, path)
+	baseURL := c.baseURL
+	if baseURL == "" {
+		baseURL = fmt.Sprintf("https://app.%s", c.site)
+	}
 
-	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, method, baseURL+path, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", name+"/"+version)
+	req.Header.Set("User-Agent", Name+"/"+Version)
 	req.Header.Set("DD-APPLICATION-KEY", c.appKey)
 	req.Header.Set("DD-API-KEY", c.apiKey)
 	return req, nil
@@ -153,7 +162,7 @@ func (c *Client) post(ctx context.Context, path string, payload any) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
-	res, err := http.DefaultClient.Do(req)
+	res, err := c.do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +177,14 @@ func (c *Client) post(ctx context.Context, path string, payload any) ([]byte, er
 		return nil, fmt.Errorf("%s: please check that your DD_API_KEY, DD_APP_KEY and DD_SITE env vars are set correctly and that your account has profiles matching your query", res.Status)
 	}
 	return resBody, nil
+}
+
+// do sends req with the client's configured HTTP client, or the default client.
+func (c *Client) do(req *http.Request) (*http.Response, error) {
+	if c.httpClient != nil {
+		return c.httpClient.Do(req)
+	}
+	return http.DefaultClient.Do(req)
 }
 
 // limitConcurrency blocks until a slot is available in the concurrency channel.
